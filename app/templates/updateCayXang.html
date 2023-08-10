@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    the gas station
+{% endblock %}
+
+{% block body %}
+<div id="mapid" style="width: 1200px; height: 600px; "></div>
+  <div >
+    <form action="{{url_for('updateCayXang_s3')}}" method="post">
+      ID: <input class='form-control' type='text' id='id' name='id' readonly>
+      Name: <input class='form-control' type='text' id='name' name='name'>
+      Address: <input class='form-control' type='text' id='address' name='address'>
+      Image: <input class='form-control'type='text' id='img' name='img'>
+      Time: <input class='form-control' type='text' id='time' name='time'>
+      Lat: <input class='form-control' type='text' id='lat' name='lat'>
+      Lng: <input class='form-control' type='text' id='lng' name='lng'>
+      <input class='btn btn-primary' type='submit' value='Cập nhật'>
+  </div>
+	<script>
+    var mymap = L.map('mapid', {fullscreenControl: true,
+																fullscreenControlOptions: { // optional
+																	title:"Show me the fullscreen !",
+																	titleCancel:"Exit fullscreen mode"
+																}}).setView([21.0734,105.7611], 13);
+		var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+		var osmAttrib='Map data &copy; OpenStreetMap contributors';
+		L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(mymap);
+		//Plugin magic goes here! Note that you cannot use the same layer object again, as that will confuse the two map controls
+
+		var osm2 = new L.TileLayer(osmUrl, {minZoom: 0, maxZoom: 13, attribution: osmAttrib });
+		var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(mymap);
+
+		// use JQUERY/AJAX
+		$.ajax({
+			url: 'http://127.0.0.1:5000/api/v1/CAYXANG/{{id}}',
+			dataType: 'json',
+			async: false, // async default = true
+			success: function(data) {
+				geojson = data;
+				console.log(data);
+			}
+		});
+
+
+		function onEachCayXang(feature, layer) {
+			// does this feature have a property
+			if (feature.properties) {
+        layer.bindPopup("<b><img src=" + feature.properties.img + " width = 250px height = 250px></b><br/>Address: " +
+  				feature.properties.address + "</br><br>Giờ mở cửa: "+feature.properties.time+"</br><br/>Name: " + feature.properties.name);
+
+				layer.on('click', function(e) {
+
+					document.querySelector('#id').value = feature.properties.id;
+					document.querySelector('#address').value = feature.properties.address;
+					document.querySelector('#img').value = feature.properties.img;
+          document.querySelector('#name').value = feature.properties.name;
+          document.querySelector('#time').value = feature.properties.time;
+          document.querySelector('#Lat').value = feature.geometry.coordinates[0];
+    			document.querySelector('#lng').value = feature.geometry.coordinates[1];
+					mymap.panTo(e.latlng, {
+						animate: true,
+						duration: 1
+					});
+				});
+			}
+		}
+    var iconCayXang = L.icon({
+      iconUrl: 'http://127.0.0.1:5000/static/icon/cayXang.jpg',
+      iconSize: [28, 28], // size of the icon
+      iconAnchor: [10, 15], // point of the icon which will correspond to marker's location
+      popupAnchor: [3, 15] // point from which the popup should open relative to the iconAnchor
+    });
+
+
+    var cayXangs = L.geoJSON(geojson, {
+      onEachFeature: onEachCayXang,
+      pointToLayer: function(feature, latlng) {
+        return L.marker(latlng,
+              {
+                icon: iconCayXang
+              });
+      }
+    }).addTo(mymap);
+
+
+    var legend = L.control({position: 'bottomleft'});
+    legend.onAdd = function (mymap) {
+        var div = L.DomUtil.create('div', 'info');
+        div.innerHTML += '<img style="width:30px;height:30px" src="static/icon/cayXang.jpg">: Cây xăng <br>';
+        return div;
+    };
+
+    legend.addTo(mymap);
+
+    mymap.on('enterFullscreen', function(){
+      if(window.console) window.console.log('enterFullscreen');
+    });
+    mymap.on('exitFullscreen', function(){
+      if(window.console) window.console.log('exitFullscreen');
+    });
+
+    locate = L.control.locate({
+          strings: {
+              title: "vị trí của tôi!"
+          }
+      }).addTo(mymap);
+
+
+
+
+
+
+	</script>
+{% endblock %}

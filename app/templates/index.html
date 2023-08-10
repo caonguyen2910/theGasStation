@@ -1,0 +1,197 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  the gas station
+{% endblock %}
+{% block body %}
+{% with messages = get_flashed_messages() %}
+  <h2> {{messages[0]}} </h2>
+{% endwith %}
+{% if current_user.is_authenticated %}
+
+	<div id="mapid" style="width: 1200px; height: 600px; "></div>
+
+
+  <script>
+  var mymap = L.map('mapid', {fullscreenControl: true,
+                              fullscreenControlOptions: { // optional
+                                title:"Show me the fullscreen !",
+                                titleCancel:"Exit fullscreen mode"
+                              }}).setView([21.0734,105.7611], 13);
+  var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  var osmAttrib='Map data &copy; OpenStreetMap contributors';
+  L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(mymap);
+  var osm2 = new L.TileLayer(osmUrl, {minZoom: 0, maxZoom: 13, attribution: osmAttrib });
+  var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(mymap);
+
+  $.ajax({
+      url: "http://127.0.0.1:5000/api/v1/cayXangPoints",
+      dataType: 'json',
+      async: false, // async default = true
+      success: function(data) {
+        geojson = data;
+        
+      }
+    });
+
+
+    //     $.ajax({
+    // 			url: "http://127.0.0.1:5000/api/v1/District",
+    // 			dataType: 'json',
+    // 			async: false, // async default = true
+    // 			success: function(data) {
+    // 				geojson_district = data;
+    				
+    // 			}
+    // 		});
+
+    // // var districtLayer = L.geoJSON(geojson_district, {
+    // // // Cấu hình cho đối tượng GeoJSON
+    // // style: function (feature) {
+    // //     return {
+    // //         fillColor: 'gray', // Màu sắc nền của polygon
+    // //         weight: 2, // Độ dày của đường viền
+    // //         opacity: 1, // Độ mờ của polygon
+    // //         color: 'blue', // Màu sắc của đường viền
+    // //         fillOpacity: 0.2 // Độ mờ của nền polygon
+    // //     };
+    // //   }
+    // // }).addTo(mymap);
+
+
+  function onEachCayXang(feature, layer) {
+    // does this feature have a property
+    if (feature.properties) {
+      layer.bindPopup("<br><img src=" + feature.properties.img + " width = 250px height = 250px></br><br><b>" +
+        feature.properties.name + "</b></br><br>Địa chỉ: "+feature.properties.address+"</br><br>Giờ mở cửa: " + feature.properties.time);
+
+        layer.on('click', function(e) {
+          mymap.panTo(e.latlng, {
+            animate: true,
+            duration: 1
+          });
+    });
+  }
+  }
+
+
+  // var iconSVG = L.divIcon({
+  //     className: 'custom-icon',
+  //     html: '<div class="svg-icon">' +
+  //             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">' +
+  //               '<circle cx="20" cy="20" r="15" fill="blue" />' +
+  //             '</svg>' +
+  //           '</div>'
+  // });
+
+
+
+
+  var iconCayXang = L.icon({
+    iconUrl: 'http://127.0.0.1:5000/static/icon/cayXang.jpg',
+    iconSize: [25, 25],
+    iconAnchor: [12.5, 12.5],
+    popupAnchor: [0, -12],
+  });
+
+  var cayXang_group = L.markerClusterGroup();
+  var cayXangs = L.geoJSON(geojson, {
+      onEachFeature: onEachCayXang,
+      pointToLayer: function(feature, latlng) {
+          return L.marker(latlng, {
+              icon: iconCayXang
+          });
+      }
+  }).addTo(cayXang_group);
+  cayXang_group.addTo(mymap);
+
+
+
+  var legend = L.control({position: 'bottomleft'});
+  legend.onAdd = function (mymap) {
+      var div = L.DomUtil.create('div', 'info');
+      div.innerHTML += '<img style="width:40px;height:40px" src="static/icon/cayXang.jpg">:   Cây xăng    <br>';
+      div.innerHTML += '<img style="width:40px;height:40px" src="static/icon/ranhgioi2.png">:   Ranh giới    <br>';
+      return div;
+  };
+
+  legend.addTo(mymap);
+
+  mymap.on('enterFullscreen', function(){
+    if(window.console) window.console.log('enterFullscreen');
+  });
+  mymap.on('exitFullscreen', function(){
+    if(window.console) window.console.log('exitFullscreen');
+  });
+
+  var cayXangPointLayers = L.layerGroup([
+      cayXang_group
+    ])
+
+    L.control.search({
+      layer: cayXangPointLayers,
+      initial: false, //True - only search on first text
+      propertyName: 'name',
+      zoom: 16,
+      buildTip: function(text, val) {
+        var name = val.layer.feature.properties.name;
+        return '<a href="#" class="'+name+'">'+text+'</a>';
+      }
+    }).addTo(mymap);
+
+    var locate = L.control.locate({
+        strings: {
+            title: "vị trí của tôi!"
+        }
+    }).addTo(mymap);
+
+
+  // Bước 1: Sử dụng plugin Leaflet.locate để lấy vị trí định vị hiện tại
+  mymap.locate();
+
+  // Bước 2: Xử lý sự kiện "locationfound" để lấy vị trí định vị
+  mymap.on('locationfound', function(e) {
+    var lat = e.latlng.lat;
+    var lng = e.latlng.lng;
+
+    // Bước 3: Xử lý sự kiện click trên bản đồ
+    mymap.on('click', function(e) {
+      var destLat = e.latlng.lat;
+      var destLng = e.latlng.lng;
+
+    // Bước 4: Đặt vị trí định vị là điểm xuất phát và vị trí click là điểm đến trong Leaflet Routing Machine
+    control.setWaypoints([
+      L.latLng(lat, lng), // Điểm xuất phát
+      L.latLng(destLat, destLng) // Điểm đến
+        ]);
+      });
+    });
+
+  // Bước 5: Tạo điểm đến ban đầu trên bản đồ
+  var control = L.Routing.control({
+  waypoints: [
+    L.latLng(), // Điểm xuất phát
+    L.latLng()  // Điểm đến ban đầu
+  ],
+  routeWhileDragging: true,
+  geocoder: L.Control.Geocoder.nominatim(),
+  language: 'vi', // Sử dụng ngôn ngữ tiếng Việt
+ 
+}).addTo(mymap);
+
+
+  // Bước 6: Xử lý sự kiện khi có chỉ đường được tính toán
+    control.on('routeselected', function(e) {
+      var routes = e.route.routes;
+      // Xử lý dữ liệu chỉ đường đã tính toán
+    });
+
+
+
+
+
+  </script>
+{% else %}
+    <h3>Bạn Cần đăng nhập để sử dụng!!!!!</h3>
+{% endif %}
+{% endblock %}

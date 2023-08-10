@@ -1,0 +1,181 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    the gas station
+{% endblock %}
+
+{% block body %}
+	<div id="mapid" style="width: 1200px; height: 600px; "></div>
+
+	<form action="{{ url_for('insertCayXang_result') }}" method="post">
+		{{ form.hidden_tag() }}
+		<p>
+				{{ form.name.label }}
+				{{ form.name(class="form-control") }}
+				{% for error in form.name.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+
+				{{ form.address.label }}
+				{{ form.address(class="form-control")}}
+				{% for error in form.address.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+
+        {{ form.time.label }}
+				{{ form.time(class="form-control")}}
+				{% for error in form.time.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+
+        {{ form.img.label }}
+				{{ form.img(class="form-control")}}
+				{% for error in form.img.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+
+				{{ form.lat.label }}
+				{{ form.lat(class="form-control") }}
+				{% for error in form.lat.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+
+				{{ form.lng.label }}
+				{{ form.lng(class="form-control") }}
+				{% for error in form.lng.errors %}
+				<span style="color: red;">[{{ error }}]</span>
+				{% endfor %}
+		</p>
+		<p>{{ form.submit() }}</p>
+	</form>
+
+	<script>
+	var mymap = L.map('mapid', {fullscreenControl: true,
+															fullscreenControlOptions: { // optional
+																title:"Show me the fullscreen !",
+																titleCancel:"Exit fullscreen mode"
+															}}).setView([21.0734,105.7611], 13);
+	var osmUrl='http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+	var osmAttrib='Map data &copy; OpenStreetMap contributors';
+	L.tileLayer(osmUrl, {attribution: osmAttrib}).addTo(mymap);
+	//Plugin magic goes here! Note that you cannot use the same layer object again, as that will confuse the two map controls
+  mymap.on('click', function(e) {
+			document.querySelector('#Lat').value = e.latlng.lat;
+			document.querySelector('#lng').value = e.latlng.lng;
+			var cayXang = L.marker([e.latlng.lat, e.latlng.lng])
+			cayXang.addTo(mymap)
+		});
+	var osm2 = new L.TileLayer(osmUrl, {minZoom: 0, maxZoom: 13, attribution: osmAttrib });
+	var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(mymap);
+
+  $.ajax({
+  		url: "http://127.0.0.1:5000/api/v1/cayXangPoints",
+  		dataType: 'json',
+  		async: false, // async default = true
+  		success: function(data) {
+  			geojson = data;
+  			// console.log(data);
+  		}
+  	});
+    $.ajax({
+			url: "http://127.0.0.1:5000/api/v1/District",
+			dataType: 'json',
+			async: false, // async default = true
+			success: function(data) {
+				geojson_district = data;
+				// console.log(data);
+			}
+		});
+    var districtLayer = L.geoJSON(geojson_district, {
+    // Cấu hình cho đối tượng GeoJSON
+    style: function (feature) {
+        return {
+            fillColor: 'gray', // Màu sắc nền của polygon
+            weight: 2, // Độ dày của đường viền
+            opacity: 1, // Độ mờ của polygon
+            color: 'blue', // Màu sắc của đường viền
+            fillOpacity: 0.2 // Độ mờ của nền polygon
+        };
+      }
+    }).addTo(mymap);
+
+
+
+  function onEachCayXang(feature, layer) {
+		// does this feature have a property
+		if (feature.properties) {
+			layer.bindPopup("<b><img src=" + feature.properties.img + " width = 250px height = 250px></b><br/>Tên: " +
+				feature.properties.name + "</br><br>Địa chỉ:"+feature.properties.address+"</br><br>giờ mở cửa: " + feature.properties.time+"</br></br><form action='http://127.0.0.1:5000/deleteCayXang' method = 'post' ><input type='hidden' name='id' value='"+feature.properties.id+"'><input type='submit' value='Xóa'></form><form action='http://127.0.0.1:5000/updateCayXang_s2' method = 'post' ><input type='hidden' name='id' value='"+feature.properties.id+"'><input type='submit' value='Cập nhật'></form>");
+
+        layer.on('click', function(e) {
+
+  				mymap.panTo(e.latlng, {
+  					animate: true,
+  					duration: 1
+          });
+    });
+  }
+}
+
+  var iconCayXang = L.icon({
+    iconUrl: 'http://127.0.0.1:5000/static/icon/cayXang.jpg',
+    iconSize: [28, 28], // size of the iconS
+
+  var cayXang_group = L.markerClusterGroup();
+  var cayXangs = L.geoJSON(geojson, {
+    onEachFeature: onEachCayXang,
+    pointToLayer: function(feature, latlng) {
+      return L.marker(latlng,
+            {
+              icon: iconCayXang
+            });
+    }
+  }).addTo(cayXang_group);
+  cayXang_group.addTo(mymap);
+
+
+  var legend = L.control({position: 'bottomleft'});
+	legend.onAdd = function (mymap) {
+			var div = L.DomUtil.create('div', 'info');
+			div.innerHTML += '<img style="width:30px;height:30px" src="static/icon/cayXang.jpg">: Cây xăng <br>';
+			return div;
+	};
+
+  legend.addTo(mymap);
+
+  mymap.on('enterFullscreen', function(){
+		if(window.console) window.console.log('enterFullscreen');
+	});
+	mymap.on('exitFullscreen', function(){
+		if(window.console) window.console.log('exitFullscreen');
+	});
+
+  var cayXangPointLayers = L.layerGroup([
+      cayXang_group
+    ])
+
+    L.control.search({
+      layer: cayXangPointLayers,
+      initial: false, //True - only search on first text
+      propertyName: 'name',
+      zoom: 16,
+      buildTip: function(text, val) {
+        var name = val.layer.feature.properties.name;
+        return '<a href="#" class="'+name+'">'+text+'</a>';
+      }
+    }).addTo(mymap);
+
+    locate = L.control.locate({
+        strings: {
+            title: "vị trí của tôi!"
+        }
+    }).addTo(mymap);
+
+
+
+
+	</script>
+
+
+
+{% endblock %}

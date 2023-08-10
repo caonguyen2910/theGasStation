@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    the gas station
+{% endblock %}
+
+{% block body %}
+    <h1>Đăng nhập</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.user_name.label }}<br>
+            {{ form.user_name(class="form-control") }}<br>
+            {% for error in form.user_name.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.password.label }}<br>
+            {{ form.password(class="form-control") }}<br>
+            {% for error in form.password.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit(class="btn btn-primary") }}</p>
+        <p>New User? <a href="{{ url_for('signUp_form') }}">Click to Register!</a></p>
+    </form>
+    {% with messages = get_flashed_messages() %}
+      <h2> {{messages[0]}} </h2>
+    {% endwith %}
+{% endblock %}

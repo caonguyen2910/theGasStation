@@ -1,0 +1,104 @@
+<html>
+    <head>
+        <title>{% block title %}{% endblock %}</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin="">
+        </script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <!-- Leaflet Plugins -->
+        <!-- FullScreen-->
+        <link rel="stylesheet" href="static/src/Control.FullScreen.css">
+        <script src="static/src/Control.FullScreen.js" type="text/javascript"></script>
+        <!-- MiniMap -->
+        <link rel="stylesheet" href="static/src/Control.MiniMap.css">
+        <script src="static/src/Control.MiniMap.js" type="text/javascript"></script>
+        <!-- leaflet-searh -->
+        <link rel="stylesheet" href="static/src/leaflet-search.css">
+        <script src="static/src/leaflet-search.js" type="text/javascript"></script>
+        <!-- MarkerCluster -->
+        <link rel="stylesheet" href="static/src/MarkerCluster.css">
+        <link rel="stylesheet" href="static/src/MarkerCluster.Default.css">
+        <script src="static/src/leaflet.markercluster-src.js" type="text/javascript"></script>
+        <!-- Locate -->
+        <script src="static/src/L.Control.Locate.js" type="text/javascript"></script>
+        <link rel="stylesheet" href="static/src/L.Control.Locate.min.css.map">
+        <link rel="stylesheet" href="static/src/L.Control.Locate.min.css">
+        <!-- Panel Layer Script and CSS -->
+         <link rel="stylesheet" href="http://127.0.0.1:5000/static/src/leaflet-panel-layers.css">
+         <script src="http://127.0.0.1:5000/static/src/leaflet-panel-layers.js" type="text/javascript"></script>
+
+
+        <!-- Tải thư viện Leaflet Routing Machine -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+        <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/perliedman-leaflet-control-geocoder/2.4.0/Control.Geocoder.min.js" ></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/perliedman-leaflet-control-geocoder/2.4.0/Control.Geocoder.min.css "></script>
+        <!-- <link rel="stylesheet" href="static/src/leaflet-routing-machine-3.2.12/package/dist/leaflet-routing-machine.css">
+        <script src="http://127.0.0.1:5000/static/src/leaflet-routing-machine-3.2.12/package/dist/leaflet-routing-machine.js"></script>
+
+
+        <link rel="stylesheet" href="http://127.0.0.1:5000/static/src/leaflet-control-geocoder-main/Control.Geocoder.css" />
+        <script src="http://127.0.0.1:5000/static/src/leaflet-control-geocoder-main/Control.Geocoder.js"></script> -->
+
+        <style>
+      	.info{
+      		background-color: white
+      	}
+        /* CSS cho biểu tượng SVG */
+.svg-icon {
+    width: 40px; /* Kích thước mặc định */
+    height: 40px; /* Kích thước mặc định */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* CSS để điều chỉnh kích thước khi bản đồ thu phóng */
+/* Điều chỉnh kích thước cho biểu tượng dựa trên độ thu phóng */
+/* Thay đổi theo cỡ bạn muốn */
+@media (max-width: 400px) {
+    .svg-icon {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+@media (min-width: 401px) and (max-width: 800px) {
+    .svg-icon {
+        width: 30px;
+        height: 30px;
+    }
+}
+/* ...và cứ tiếp tục cho các điều kiện thu phóng khác */
+
+      	</style>
+    </head>
+    <body>
+        {% block bodyTitle %}
+        {% endblock %}
+        {% if current_user.is_authenticated %}
+          {{current_user.full_name}}!
+         <a href="{{url_for('logout')}}">Log out</a>
+        {% endif %}
+        <ul class='nav nav-tabs'>
+          <li class="nav-link" ><a href="{{ url_for('index')}}">Home</a></li>
+          {% if not current_user.is_authenticated %}
+            <li class="nav-link" ><a href="{{ url_for('login')}}">Log in</a></li>
+            <li class="nav-link" ><a href="{{ url_for('signUp_form')}}">Sign up</a></li>
+          {% endif %}
+          {% if current_user.is_admin == 1 %}
+            <li class="nav-link"  ><a href="{{ url_for('setAdmin')}}">review admin</a></li>
+            <li class="nav-link"  ><a href="{{ url_for('insertCayXang_s1')}}">Add and edit gas station</a></li>
+          {% endif %}
+
+        </ul>
+        <div class="container">
+              {% block body %}
+              {% with messages = get_flashed_messages() %}
+                <h2> {{messages[0]}} </h2>
+              {% endwith %}
+              {% endblock %}
+        </div>
+
+    </body>

@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  the gas station
+{% endblock %}
+
+{% block body %}
+    <h1> Select </h1>
+
+    <table  class="table">
+      <tr>
+        <td> User Name</td>
+        <td> Full Name</td>
+        <td>is_admin</td>
+      </tr>
+
+      {% for user in users %}
+      <tr>
+        <td>
+              <a href="{{ url_for('setAdmin_s2', id=user.id)}}">
+                {{user.user_name}}
+              </a>
+        </td>
+        <td> {{user.full_name}}</td>
+        <td>{% if user.is_admin == 1 %}
+                Yes
+            {% else %}
+              No
+            {%endif%}
+          </td>
+        </tr>
+      {% endfor %}
+
+{% endblock %}
